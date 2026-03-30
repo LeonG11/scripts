@@ -1,5 +1,5 @@
 //Инициализация кнопок
-export const InitButton = [
+InitButton = [
   {
     Name: 'UppercaseLetter',
     Description: 'Заглавные буквы в имени панели и блоков',
@@ -222,8 +222,8 @@ export const InitButton = [
     GroupType: 'Select',
   },
 ];
-export const TypeGroup = ['Rename', 'Furniture', 'Model', 'Select', 'Panel'];
-export const SignGroup = [
+ TypeGroup = ['Rename', 'Furniture', 'Model', 'Select', 'Panel'];
+ SignGroup = [
   {
     NameGroup: 'RenameSign',
     Sign: 'Переименование',
@@ -246,10 +246,10 @@ export const SignGroup = [
   },
 ];
 // Параметризация окна
-export const WIDTH_BUTTON = 260;
-export const HEIGHT_BUTTON = 30;
-export const WIDTH_ALIGN = 11;
-export const HEIGHT_ALIGN = 10;
-export const WIDTH_FORM = TypeGroup.length * WIDTH_BUTTON + (TypeGroup.length + 1) * WIDTH_ALIGN;
+WIDTH_BUTTON = 260;
+HEIGHT_BUTTON = 30;
+WIDTH_ALIGN = 11;
+HEIGHT_ALIGN = 10;
+WIDTH_FORM = TypeGroup.length * WIDTH_BUTTON + (TypeGroup.length + 1) * WIDTH_ALIGN;
 
 //Инициализация кнопок
