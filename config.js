@@ -106,11 +106,6 @@ InitButton = [
     GroupType: 'Model',
   },
   {
-    Name: 'ChangeColorMaterial',
-    Description: 'Установка цветов материала',
-    GroupType: 'Model',
-  },
-  {
     Name: 'DisassemblySelect',
     Description: 'Выделение для взрыв схем',
     GroupType: 'Select',
@@ -189,11 +184,6 @@ InitButton = [
     Name: 'RenameObjectWithArtPos',
     Description: 'Переименовать деталь по Д-№позиции',
     GroupType: 'Rename',
-  },
-  {
-    Name: 'RoundingPanel',
-    Description: 'Скруглятор',
-    GroupType: 'Model',
   },
   {
     Name: 'FurnitureHoleSize',
