@@ -211,9 +211,14 @@ InitButton = [
     Description: 'Выделить все объкты с польз. св-ми',
     GroupType: 'Select',
   },
+  {
+    Name: 'ExportMetalSpec',
+    Description: 'Создать спецификацию металла',
+    GroupType: 'Model',
+  },
 ];
- TypeGroup = ['Rename', 'Furniture', 'Model', 'Select', 'Panel'];
- SignGroup = [
+TypeGroup = ['Rename', 'Furniture', 'Model', 'Select', 'Panel'];
+SignGroup = [
   {
     NameGroup: 'RenameSign',
     Sign: 'Переименование',
@@ -240,6 +245,7 @@ WIDTH_BUTTON = 260;
 HEIGHT_BUTTON = 30;
 WIDTH_ALIGN = 11;
 HEIGHT_ALIGN = 10;
-WIDTH_FORM = TypeGroup.length * WIDTH_BUTTON + (TypeGroup.length + 1) * WIDTH_ALIGN;
+WIDTH_FORM =
+  TypeGroup.length * WIDTH_BUTTON + (TypeGroup.length + 1) * WIDTH_ALIGN;
 
 //Инициализация кнопок

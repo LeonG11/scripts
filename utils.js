@@ -34,3 +34,11 @@ function generateDesignationRange(rangeStr) {
   }
   return result;
 }
+function getAnglesForPhoto(v, h) {
+  return [
+    [v, h],
+    [v, -h],
+    [v, 180 - h],
+    [v, -(180 - h)],
+  ];
+}

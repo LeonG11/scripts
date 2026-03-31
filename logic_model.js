@@ -125,7 +125,7 @@ function ScreenshotModel() {
   alert('Скрипт позволяет сохранить скриншоты модели в папку');
 
   let Menu = Action.Properties;
-  let fileDir = Menu.NewString('Путь', '');
+  let fileDir = Menu.NewString('Путь', 'H:\\Качанов Кирилл\\2026\ПРОЕКТЫ\\Скриншоты');
 
   Menu.NewButton('Задать путь').OnClick = () => {
     let currentDir = system.askFolder();
