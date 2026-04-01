@@ -14,7 +14,6 @@ function ExportMetalSpec() {
     if (currentDir) fileDir.Value = currentDir;
   };
 
-  // 1. Сбор уникальных данных для меню (чекбоксов)
   let mats = {}, blks = {};
   Model.forEach(obj => {
     if (obj instanceof TFurnPanel || obj instanceof TExtrusionBody) {
@@ -36,59 +35,81 @@ function ExportMetalSpec() {
     bChecks[b] = BlkGrp.NewBool(b, keys.some(k => b.toLowerCase().indexOf(k) !== -1));
   });
 
-  // 2. Логика выгрузки
   Menu.NewButton('🚀 Сформировать ведомость').OnClick = () => {
     try {
         let fullPath = fileDir.Value + '\\' + fileName.Value + '.csv';
         const clean = (txt) => (txt || "").toString().replace(/;/g, ' ').replace(/[\r\n]+/g, ' ').trim();
 
-        let detailsData = []; // Сюда собираем детали для сортировки
-        let blocksRows = ['\nТАБЛИЦА 2: СБОРОЧНЫЕ ЕДИНИЦЫ (БЛОКИ)', '№;Наименование;Обозначение;Размеры;Кол-во'];
-        let blkCount = 1;
+        let detailsMap = {}; // Для группировки деталей
+        let blocksMap = {};  // Для группировки блоков
 
-        // ПРОХОД ПО МОДЕЛИ
         Model.forEach(obj => {
           let name = clean(obj.Name);
           let matName = clean(obj.MaterialName);
           let des = clean(obj.Designation) || "-";
 
-          // А) ПРОВЕРКА ПАНЕЛЕЙ
+          // А) ОБРАБОТКА ДЕТАЛЕЙ (Панели и Профили)
           if (obj instanceof TFurnPanel || obj instanceof TExtrusionBody) {
-            // Проверяем, стоит ли галочка на этом материале
             if (mChecks[obj.MaterialName] && mChecks[obj.MaterialName].Value === true) {
-              detailsData.push({
-                des: des,
-                name: name,
-                mat: matName,
-                size: Math.round(obj.ContourWidth) + 'x' + Math.round(obj.ContourHeight)
-              });
+              
+              let sizeStr = "";
+              if (obj instanceof TExtrusionBody) {
+                // Для профилей берем габарит их контура (сечения) и длину вытягивания
+                sizeStr = Math.round(obj.GSize.x) + 'x' + Math.round(obj.GSize.y) + ' L=' + Math.round(obj.GSize.z);
+              } else {
+                sizeStr = Math.round(obj.ContourWidth) + 'x' + Math.round(obj.ContourHeight);
+              }
+
+              // Ключ для группировки: Обозначение + Имя + Материал + Размер
+              let key = des + '|' + name + '|' + matName + '|' + sizeStr;
+              
+              if (!detailsMap[key]) {
+                detailsMap[key] = { des: des, name: name, mat: matName, size: sizeStr, count: 0 };
+              }
+              detailsMap[key].count++;
             }
           } 
-          // Б) ПРОВЕРКА СБОРОК
+          // Б) ОБРАБОТКА СБОРОК
           else if (obj instanceof TFurnBlock || obj instanceof TFurnAsm) {
             if (bChecks[obj.Name] && bChecks[obj.Name].Value === true) {
               let g = obj.GSize;
-              blocksRows.push(`${blkCount};${name};${des};${Math.round(g.x)}x${Math.round(g.y)}x${Math.round(g.z)};1`);
-              blkCount++;
+              let sizeStr = Math.round(g.x) + 'x' + Math.round(g.y) + 'x' + Math.round(g.z);
+              
+              // Ключ для блоков: Обозначение + Имя + Размер
+              let key = des + '|' + name + '|' + sizeStr;
+
+              if (!blocksMap[key]) {
+                blocksMap[key] = { des: des, name: name, size: sizeStr, count: 0 };
+              }
+              blocksMap[key].count++;
             }
           }
         });
 
-        // 3. СОРТИРОВКА ДЕТАЛЕЙ ПО ОБОЗНАЧЕНИЮ (Цифровая)
-        detailsData.sort((a, b) => a.des.localeCompare(b.des, undefined, {numeric: true}));
+        // ПРЕВРАЩАЕМ В МАССИВЫ И СОРТИРУЕМ
+        let detailsList = [];
+        for (let k in detailsMap) detailsList.push(detailsMap[k]);
+        detailsList.sort((a, b) => a.des.localeCompare(b.des, undefined, {numeric: true}));
 
-        // 4. ФОРМИРОВАНИЕ СТРОК ДЕТАЛЕЙ (После сортировки)
-        let detailsRows = ['ТАБЛИЦА 1: ДЕТАЛИ (ПАНЕЛИ)', '№;Обозначение;Наименование;Материал;Размеры;Кол-во'];
-        detailsData.forEach((d, idx) => {
-          // Порядок: №;Обозначение;Наименование;Материал;Размеры;Кол-во
-          detailsRows.push(`${idx + 1};${d.des};${d.name};${d.mat};${d.size};1`);
+        let blocksList = [];
+        for (let k in blocksMap) blocksList.push(blocksMap[k]);
+        blocksList.sort((a, b) => a.des.localeCompare(b.des, undefined, {numeric: true}));
+
+        // ФОРМИРУЕМ СТРОКИ ТАБЛИЦЫ 1 (Детали)
+        let rows = ['ТАБЛИЦА 1: ДЕТАЛИ', '№;Обозначение;Наименование;Материал;Размеры;Кол-во'];
+        detailsList.forEach((d, idx) => {
+          rows.push(`${idx + 1};${d.des};${d.name};${d.mat};${d.size};${d.count}`);
         });
 
-        // 5. ЗАПИСЬ В ФАЙЛ
-        let finalOutput = ['\ufeff'].concat(detailsRows, [""], blocksRows);
-        system.writeTextFile(fullPath, finalOutput.join('\n'));
+        // ФОРМИРУЕМ СТРОКИ ТАБЛИЦЫ 2 (Сборки)
+        rows.push('\nТАБЛИЦА 2: СБОРОЧНЫЕ ЕДИНИЦЫ', '№;Обозначение;Наименование;Размеры;Кол-во');
+        blocksList.forEach((b, idx) => {
+          rows.push(`${idx + 1};${b.des};${b.name};${b.size};${b.count}`);
+        });
+
+        system.writeTextFile(fullPath, '\ufeff' + rows.join('\n'));
         
-        alert('Готово! Выгружено:\nДеталей: ' + detailsData.length + '\nСборок: ' + (blkCount - 1));
+        alert('Готово! Выгружено уникальных позиций:\nДеталей: ' + detailsList.length + '\nСборок: ' + blocksList.length);
         Action.Finish();
 
     } catch(e) {
