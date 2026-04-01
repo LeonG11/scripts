@@ -1,1 +1,0 @@
-﻿alert('Площадь панели - ' + (Math.round(Model.Selected.AsPanel.ContourHeight)/1000)*(Math.round(Model.Selected.AsPanel.ContourWidth)/1000))
