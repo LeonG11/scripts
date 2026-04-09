@@ -81,8 +81,8 @@ InitButton = [
     GroupType: 'Select',
   },
   {
-    Name: 'SelectDiffName',
-    Description: 'Выделение одна поз. разные имена',
+    Name: 'SelectOneDesignationDiffName',
+    Description: 'Выделение одно обозначение - разные имена',
     GroupType: 'Select',
   },
   {

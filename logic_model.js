@@ -1,5 +1,5 @@
-function CounterItems() {
-  createAlert('Скрипт выводит количество выделенных объектов');
+function counteritems() {
+  createalert('скрипт выводит количество выделенных объектов');
   alert(`Количество выделенных объектов - ${Model.SelectionCount} шт.`);
   alert('Готово');
   Action.Finish();
@@ -68,43 +68,53 @@ function HideNotVisible() {
   Action.Finish();
 }
 
-function SelectOneNumberDiffName() {
-  createAlert(
-    'Скрипт позволяет выделить обьекты с одной позицией и разными наименованиями'
+function SelectOneDesignationDiffName() {
+  alert(
+    'Скрипт позволяет выделить объекты с одинаковым обозначением и разными наименованиями'
   );
-  let positionMap = {};
+  let designationMap = {};
 
+  // Проходим по всем объектам модели
   Model.forEach((obj) => {
-    if (obj.ArtPos != '') {
-      if (!positionMap[obj.ArtPos]) {
-        positionMap[obj.ArtPos] = new Set();
+    // Проверяем наличие обозначения (свойство Designation)
+    if (obj.Designation && obj.Designation != '') {
+      if (!designationMap[obj.Designation]) {
+        designationMap[obj.Designation] = new Set();
       }
-      positionMap[obj.ArtPos].add(obj.Name);
+      designationMap[obj.Designation].add(obj.Name);
     }
   });
 
-  const conflict = Object.entries(positionMap)
-    .filter(([ArtPos, Names]) => Names.size > 1)
-    .map(([ArtPos, Names]) => ArtPos);
+  // Ищем обозначения, у которых более одного уникального имени
+  const conflict = Object.entries(designationMap)
+    .filter(([Designation, Names]) => Names.size > 1)
+    .map(([Designation, Names]) => Designation);
 
+  // Выделяем объекты, попавшие в список конфликтов
   Model.forEach((obj) => {
-    if (conflict.includes(obj.ArtPos)) obj.Selected = true;
+    if (conflict.includes(obj.Designation)) {
+      obj.Selected = true;
+    } else {
+      obj.Selected = false; // Опционально: снимаем выделение с правильных
+    }
   });
 
-  const nameConflict = Object.entries(positionMap)
-    .filter(([ArtPos, Names]) => Names.size > 1)
+  // Формируем отчет
+  const nameConflict = Object.entries(designationMap)
+    .filter(([Designation, Names]) => Names.size > 1)
     .map(
-      ([ArtPos, Names]) =>
-        `Поз - ${ArtPos}, Наименования:\n${Array.from(Names).join('\n')}\n`
+      ([Designation, Names]) =>
+        `Обозначение - ${Designation}, Наименования:\n${Array.from(Names).join('\n')}\n`
     );
 
-  if (nameConflict.length == 0) alert('Все обьекты правильные');
-  else {
-    alert('Найдены несовпадающие имена\n' + nameConflict.join('\n'));
+  if (nameConflict.length == 0) {
+    alert('Все объекты соответствуют именам');
+  } else {
+    alert('Найдены несовпадающие имена для одинаковых обозначений:\n\n' + nameConflict.join('\n'));
   }
+  
   Action.Finish();
 }
-
 function DefaultColor() {
   let flag = confirm(
     'Скрипт преобразует цвета панелей, блоков, фурнитуры, линий связи в стандартный черный цвет. Замена производится для всех объектов модели.Хотите продолжить?'
