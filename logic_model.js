@@ -152,29 +152,136 @@ function ScreenshotModel() {
   };
 }
 function CheckName() {
-  createBackup(() => {
-    let flag = confirm(
-      'Скрипт проверяет вместимость названий панелей и модуля на бирке. Продолжить?'
-    );
-    if (flag) {
-      let counter = 0;
-      ScriptForm.Form.Visible = false;
-      Model.forEach((obj) => {
-        // Проверка на длину более 18 символов
-        if (obj instanceof TFurnPanel && obj.Name.length > 18) {
-          obj.Selected = true;
-          counter++;
-        }
-      });
-      alert(
-        counter == 0
-          ? 'Все панели проходят проверку'
-          : 'Найдено ' + counter + ' длинных имен (>18 симв.)'
-      );
+  if (typeof ScriptForm !== 'undefined') ScriptForm.Form.Visible = false;
+
+  let OrderName = Action.Control.Article.OrderName || "Без_заказа";
+  let ObjectName = Action.Control.Article.Name || "Без_имени";
+  
+  let StateUpOrderName = 28;
+  let StateUpObjectName = 14;
+  let StateUpPanelName = 16; 
+  let StateUpMaterialName = 29;
+
+  let errorsFound = 0;
+  let panelErrorsCount = 0; // Отдельный счетчик для панелей
+  let foundLog = "=== 1. ОБНАРУЖЕННЫЕ ПРЕВЫШЕНИЯ ЛИМИТОВ ===\n";
+  let panelMap = {}; 
+  let conflictDesignations = []; 
+
+  // 1. Сбор данных
+  Model.forEach((obj) => {
+    if (obj instanceof TFurnPanel) {
+      let des = obj.Designation || "Без_обозначения";
+      if (!panelMap[des]) {
+        panelMap[des] = {
+          name: obj.Name.trim(),
+          mat: obj.MaterialName.trim(),
+          count: 0
+        };
+      }
+      panelMap[des].count++;
     }
   });
-}
 
+  // 2. Анализ заголовков
+  if (OrderName.length > StateUpOrderName) {
+    foundLog += "❌ ЗАКАЗ [" + OrderName + "] : " + OrderName.length + " симв. (Лимит " + StateUpOrderName + ")\n";
+    errorsFound++;
+  }
+  if (ObjectName.length > StateUpObjectName) {
+    foundLog += "❌ МОДЕЛЬ [" + ObjectName + "] : " + ObjectName.length + " симв. (Лимит " + StateUpObjectName + ")\n";
+    errorsFound++;
+  }
+
+  // 3. Анализ панелей и материалов
+  let panelLines = "";
+  let materialLines = "";
+
+  for (let des in panelMap) {
+    let data = panelMap[des];
+    if (data.name.length > StateUpPanelName) {
+      panelLines += "⚠️ ПАНЕЛЬ [" + des + "] '" + data.name + "' : " + data.name.length + " симв.\n";
+      conflictDesignations.push(des);
+      errorsFound++;
+      panelErrorsCount++;
+    }
+    if (data.mat.length > StateUpMaterialName) {
+      let cleanMat = data.mat.replace(/[\r\n]+/g, " "); 
+      materialLines += "⚠️ МАТЕРИАЛ [" + des + "] '" + cleanMat + "' : " + cleanMat.length + " симв.\n";
+      errorsFound++;
+    }
+  }
+
+  if (panelLines) foundLog += "\n[Длинные имена деталей]:\n" + panelLines;
+  if (materialLines) foundLog += "\n[Длинные названия материалов]:\n" + materialLines;
+
+  // 4. Инспектор
+  let changeLog = "\n=== 2. ЖУРНАЛ ПРИНЯТЫХ МЕР ===\nАвтор: " + system.userName + "\n";
+
+  if (panelErrorsCount > 0) {
+    if (confirm("Найдено ошибок в именах панелей: " + panelErrorsCount + ". Исправить?")) {
+      ViewAll();
+      for (let i = 0; i < conflictDesignations.length; i++) {
+        let currentDes = conflictDesignations[i];
+        let oldName = panelMap[currentDes].name;
+
+        UnSelectAll();
+        Model.forEach((obj) => {
+          if (obj instanceof TFurnPanel && obj.Designation === currentDes) obj.Selected = true;
+        });
+        if (typeof Model.Refresh === 'function') Model.Refresh();
+
+        let newName = oldName;
+        let isInputCorrect = false;
+
+        while (!isInputCorrect) {
+          newName = prompt("АРТИКУЛ: " + currentDes + "\nИМЯ: " + oldName + " (" + oldName.length + " симв.)\nЛИМИТ: " + StateUpPanelName, newName);
+          if (newName === null) {
+            isInputCorrect = true;
+            changeLog += "➖ [" + currentDes + "] ОСТАВЛЕНО: '" + oldName + "'\n";
+          } else if (newName.length <= StateUpPanelName) {
+            isInputCorrect = true;
+            Model.forEach((obj) => { if (obj.Selected) obj.Name = newName; });
+            changeLog += "✅ [" + currentDes + "] ИЗМЕНЕНО: '" + oldName + "' -> '" + newName + "'\n";
+          } else {
+            alert("Ошибка! Длина " + newName.length + " симв. Лимит " + StateUpPanelName);
+          }
+        }
+      }
+    } else {
+      changeLog += "Конструктор отказался исправлять панели.\n";
+    }
+  }
+
+  // 5. Финал: Запись и текстовый вывод
+  if (errorsFound > 0) {
+    let networkPath = 'H:\\База СМ+\\Scripts\\Отчеты\\';
+    let safeOrderName = OrderName.replace(/[/\\?%*:|"<>]/g, '-');
+    let fileName = networkPath + safeOrderName + " лимиты бирки.txt";
+    let finalReport = "ОТЧЕТ ПО БИРКАМ\nПроект: " + ObjectName + "\nДата: " + new Date().toLocaleString() + "\n" + "=".repeat(50) + "\n\n" + foundLog + changeLog;
+
+    try {
+      system.writeTextFile(fileName, finalReport);
+      
+      let msg = "";
+      if (panelErrorsCount === 0) {
+        msg = "✅ В названиях панелей всё норм.\n\n";
+      } else {
+        msg = "⚠️ В именах панелей были ошибки.\n\n";
+      }
+      
+      alert(msg + "Полный отчет сохранен здесь:\n" + fileName);
+      
+    } catch (e) {
+      alert("ОШИБКА ЗАПИСИ НА ДИСК H!");
+    }
+  } else {
+    alert("✅ Все названия в норме (заказ, модель, панели и материалы)!");
+  }
+
+  if (typeof ScriptForm !== 'undefined') ScriptForm.Form.Visible = true;
+  Action.Finish();
+}
 function TechnicalButton() {
   let flag = confirm(
     'Этот скрипт предназначен для отладки, точно хотите продолжить?'
