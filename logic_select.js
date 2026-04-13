@@ -176,49 +176,115 @@ function SelectPanelCutName() {
   };
 }
 
-function SelectPlastics() {
-  ScriptForm.Form.Visible = false;
-  alert('Скрипт выделяет панели, на которых есть облицование пласти');
-  UnSelectAll();
-  let counter = 0;
-  Model.forEachPanel((p) => {
-    if (p.Plastics.Count > 0) {
-      p.Selected = true;
-      counter++;
-    }
-  });
-  if (counter != 0) {
-    alert('Выделено ' + counter + ' панелей с облицованой пластью');
-  } else {
-    alert('Все панели без облицованной пласти');
+function SelectOneDesignationDiffName() {
+  // 0. Подготовка интерфейса
+  if (typeof ScriptForm !== 'undefined') {
+    ScriptForm.Form.Visible = false;
   }
-  Action.Finish();
-}
 
-function SearchOboz() {
-  createAlert('Скрипт выделяет по обозначениям или диапазону');
-  const input = prompt('Введите значения (например: 01.01.01 02.01.01-03)');
-  if (!input) return;
+  alert(
+    'ИНСТРУКЦИЯ:\n' +
+    '1. Скрипт найдет группы с одинаковым артикулом, но разными именами.\n' +
+    '2. Выделит ВСЕ объекты группы сразу и предложит ОБЩЕЕ имя.\n' +
+    '3. Отчет сохранится на диск H.'
+  );
 
-  let elements = [];
-  input.split(' ').forEach((el) => {
-    if (el.includes('-')) elements.push(...generateDesignationRange(el));
-    else elements.push(el);
-  });
+  let designationMap = {};
+  UnSelectAll();
 
-  let counter = 0;
+  // 1. ТВОЙ ОРИГИНАЛЬНЫЙ ПОИСК (Проходим по всем объектам)
   Model.forEach((obj) => {
-    if (
-      (obj instanceof TFurnPanel || obj instanceof TFurnBlock) &&
-      elements.includes(obj.Designation)
-    ) {
-      obj.Selected = true;
-      counter++;
+    if (obj.Designation && obj.Designation != '') {
+      if (!designationMap[obj.Designation]) {
+        designationMap[obj.Designation] = new Set();
+      }
+      designationMap[obj.Designation].add(obj.Name);
     }
   });
-  alert(counter > 0 ? 'Найдено объектов: ' + counter : 'Ничего не найдено');
+
+  // ТВОЙ ОРИГИНАЛЬНЫЙ ФИЛЬТР (Ищем обозначения, у которых более одного уникального имени)
+  const conflict = Object.entries(designationMap)
+    .filter(([Designation, Names]) => Names.size > 1)
+    .map(([Designation, Names]) => Designation);
+
+  // ПРОВЕРКА НАЛИЧИЯ КОНФЛИКТОВ
+  if (conflict.length == 0) {
+    alert('Все объекты соответствуют именам');
+    if (typeof ScriptForm !== 'undefined') ScriptForm.Form.Visible = true;
+    return Action.Finish();
+  }
+
+  // 2. ПОДГОТОВКА ОТЧЕТА
+  let projectID = Action.Control.Article.OrderName ? Action.Control.Article.OrderName : "Без_номера";
+  let logChanges = '--- ЖУРНАЛ ГРУППОВЫХ ИЗМЕНЕНИЙ ---\nАвтор: ' + system.userName + '\n';
+
+  // 3. ГРУППОВОЙ ИНСПЕКТОР (Цикл по найденным конфликтам)
+  if (confirm('Найдено артикулов с расхождениями: ' + conflict.length + '. Начать правку?')) {
+    
+    // Ставим модель в рамку один раз
+    ViewAll();
+
+    for (let i = 0; i < conflict.length; i++) {
+      let currentDes = conflict[i];
+      let currentNamesSet = designationMap[currentDes]; 
+      let currentNamesArr = Array.from(currentNamesSet);
+
+      // Выделяем всю группу объектов с этим обозначением
+      UnSelectAll();
+      Model.forEach((obj) => {
+        if (obj.Designation === currentDes) {
+          obj.Selected = true;
+        }
+      });
+
+      // Обновляем экран, чтобы видеть выделение
+      if (typeof Model.Refresh === 'function') Model.Refresh();
+
+      let newName = prompt(
+        'ПРОЕКТ: ' + projectID + '\n' +
+        'АРТИКУЛ: ' + currentDes + '\n' +
+        'ТЕКУЩИЕ ИМЕНА В ГРУППЕ:\n' + currentNamesArr.join('; ') + '\n\n' +
+        'Введите ОБЩЕЕ имя для всей группы:', 
+        currentNamesArr[0] // Предлагаем первое имя из списка как вариант
+      );
+
+      if (newName !== null && newName !== undefined) {
+        logChanges += '\nАртикул: ' + currentDes + '\n';
+        
+        // Применяем имя ко всем объектам группы
+        Model.forEach((obj) => {
+          if (obj.Designation === currentDes) {
+            let oldName = obj.Name;
+            if (oldName !== newName) {
+              obj.Name = newName;
+              logChanges += '  [ИЗМЕНЕНО]  "' + oldName + '"  ->  "' + newName + '"\n';
+            } else {
+              logChanges += '  [БЕЗ ИЗМЕНЕНИЙ]  "' + oldName + '"\n';
+            }
+          }
+        });
+      }
+    }
+  }
+
+  // 4. ЗАПИСЬ НА ДИСК H
+  let networkPath = 'H:\\База СМ+\\Scripts\\Отчеты\\';
+  let fullFileName = networkPath + projectID + ' отчет о расхождениях.txt';
+  let finalReport = 'ОТЧЕТ О РАСХОЖДЕНИЯХ: ' + projectID + '\n' +
+                    'Дата: ' + new Date().toLocaleString() + '\n' +
+                    '------------------------------------------\n' + logChanges;
+
+  try {
+    system.writeTextFile(fullFileName, finalReport);
+    alert('✅ ОТЧЕТ СОХРАНЕН: ' + fullFileName + '\n\n' + finalReport);
+  } catch (e) {
+    alert('❌ ОШИБКА ЗАПИСИ НА ДИСК H\n\n' + logChanges);
+  }
+
+  if (typeof ScriptForm !== 'undefined') ScriptForm.Form.Visible = true;
   Action.Finish();
 }
+
 
 function SearchOboz() {
   createAlert('Скрипт выделяет панели по обозначениям или диапазону');
