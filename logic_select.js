@@ -1,12 +1,3 @@
-function SelectDatumBlock() {
-  createAlert('Скрипт позволяет выделить фрагменты');
-  Model.forEach((obj) => {
-    if (obj instanceof TFurnBlock && obj.DatumMode != 0 && !obj.JointData)
-      obj.Selected = true;
-  });
-  Action.Finish();
-}
-
 function SelectOff() {
   createAlert('Скрипт выделяет панели с выключенным учетом');
   let Menu = Action.Properties;
@@ -45,15 +36,28 @@ function SelectOff() {
 }
 
 function SelectUserProperty() {
-  createAlert('Скрипт выделит все объекты с польз. свойствами');
+  ScriptForm.Form.Visible = false;
+  alert(
+    'Скрипт позволяет выделить все блоки, панели и профили с пользовательскими свойствами'
+  );
   UnSelectAll();
+  let counter = 0;
   Model.forEach((obj) => {
-    if (obj.UserPropCount > 0) obj.Selected = true;
+    if (obj.UserPropCount > 0) {
+      obj.Selected = true;
+      counter++;
+    }
   });
+  if (counter != 0) {
+    alert('Выделено ' + counter + ' объектов');
+  } else {
+    alert('Все объекты без пользовательских свойств');
+  }
   Action.Finish();
 }
 
 function SelectFastPanels() {
+  ScriptForm.Form.Visible = false;
   let panels = [];
   if (Model.SelectionCount == 1 && Model.Selections[0] instanceof TFurnPanel) {
     let fasteners = Model.Selections[0].FindConnectedFasteners();
@@ -66,6 +70,13 @@ function SelectFastPanels() {
     (n, i, arr) => arr.findIndex((s) => s.UID === n.UID) === i
   );
   uniquePanels.forEach((p) => (p.Selected = true));
+
+  if (uniquePanels.length == 0)
+    alert('Данная панель не соединина с другими крепежом');
+  else
+    alert(
+      'Выделено ' + uniquePanels.length + ' панели(ей) вместе с указанными'
+    );
   Action.Finish();
 }
 
@@ -94,6 +105,8 @@ function SelectDiffName() {
 }
 
 function SelectHandDrilling() {
+  ScriptForm.Form.Visible = false;
+  alert('Скрипт позволяет выделить панели размером менее чем указанные');
   let Menu = Action.Properties;
   let hS = Menu.NewNumber('Минимальный размер', 40);
   Menu.NewButton('Выделить').OnClick = () => {
@@ -102,7 +115,10 @@ function SelectHandDrilling() {
         p.Selected = true;
     });
   };
-  Menu.NewButton('Закончить').OnClick = () => Action.Finish();
+  Menu.NewButton('Закончить').OnClick = () => {
+    alert('Готово');
+    Action.Finish();
+  };
 }
 
 // logic_select.js
@@ -161,10 +177,21 @@ function SelectPanelCutName() {
 }
 
 function SelectPlastics() {
+  ScriptForm.Form.Visible = false;
+  alert('Скрипт выделяет панели, на которых есть облицование пласти');
   UnSelectAll();
+  let counter = 0;
   Model.forEachPanel((p) => {
-    if (p.Plastics.Count > 0) p.Selected = true;
+    if (p.Plastics.Count > 0) {
+      p.Selected = true;
+      counter++;
+    }
   });
+  if (counter != 0) {
+    alert('Выделено ' + counter + ' панелей с облицованой пластью');
+  } else {
+    alert('Все панели без облицованной пласти');
+  }
   Action.Finish();
 }
 
@@ -196,12 +223,14 @@ function SearchOboz() {
 function SearchOboz() {
   createAlert('Скрипт выделяет панели по обозначениям или диапазону');
   UnSelectAll();
-  
-  const input = prompt('Введите значения через пробел или дефис (01.01.01 02.01.01-03)');
+
+  const input = prompt(
+    'Введите значения через пробел или дефис (01.01.01 02.01.01-03)'
+  );
   if (!input) return;
 
   let elements = [];
-  input.split(' ').forEach(el => {
+  input.split(' ').forEach((el) => {
     if (el.includes('-')) {
       elements.push(...generateDesignationRange(el));
     } else if (/^\d+(\.\d+)*$/.test(el)) {
@@ -214,9 +243,13 @@ function SearchOboz() {
   let counter = 0;
   let stats = {};
 
-  Model.forEach(obj => {
-    if ((obj instanceof TFurnPanel || obj instanceof TExtrusionBody || obj instanceof TFurnBlock) && 
-        elements.includes(obj.Designation)) {
+  Model.forEach((obj) => {
+    if (
+      (obj instanceof TFurnPanel ||
+        obj instanceof TExtrusionBody ||
+        obj instanceof TFurnBlock) &&
+      elements.includes(obj.Designation)
+    ) {
       obj.Selected = true;
       stats[obj.Designation] = (stats[obj.Designation] || 0) + 1;
       counter++;
@@ -224,45 +257,9 @@ function SearchOboz() {
   });
 
   if (counter > 0) {
-    let report = Object.entries(stats).map(([des, count]) => `Обозначение ${des} - ${count} шт.`).join('\n');
-    alert(`${report}\n\nВсего выделено: ${counter}`);
-  } else {
-    alert('Объекты не найдены');
-  }
-}
-
-function SearchPosition() {
-  createAlert('Скрипт выделяет панели по позициям или диапазону');
-  UnSelectAll();
-  
-  const input = prompt('Введите позиции через пробел или дефис (1 5-10 12)');
-  if (!input) return;
-
-  let elements = [];
-  input.split(' ').forEach(el => {
-    if (el.includes('-')) {
-      let [start, end] = el.split('-').map(n => parseInt(n));
-      for (let i = start; i <= end; i++) elements.push(String(i));
-    } else {
-      elements.push(el);
-    }
-  });
-
-  if (elements.length === 0) return alert('Неверно указаны позиции');
-
-  let counter = 0;
-  let stats = {};
-
-  Model.forEach(obj => {
-    if ((obj instanceof TFurnPanel || obj instanceof TExtrusionBody) && elements.includes(obj.ArtPos)) {
-      obj.Selected = true;
-      stats[obj.ArtPos] = (stats[obj.ArtPos] || 0) + 1;
-      counter++;
-    }
-  });
-
-  if (counter > 0) {
-    let report = Object.entries(stats).map(([pos, count]) => `Поз. №${pos} - ${count} шт.`).join('\n');
+    let report = Object.entries(stats)
+      .map(([des, count]) => `Обозначение ${des} - ${count} шт.`)
+      .join('\n');
     alert(`${report}\n\nВсего выделено: ${counter}`);
   } else {
     alert('Объекты не найдены');
@@ -281,11 +278,20 @@ function SelectPanelForFactori() {
       let CountButts = Butts.Count;
       let Cuts = this.panel.Cuts;
       let CutsCount = Cuts.Count;
-      
+
       let TriggerName = ['Припуск', 'Прип.', 'Пол.', 'Полировка'];
       let TriggerCuts = [
-        '90', '915.380.11', '955.102.11', '955.103.11', '927.080.11',
-        '914.060.11', '990.505.11', '10639', '914.817.11', 'спил', 'угол',
+        '90',
+        '915.380.11',
+        '955.102.11',
+        '955.103.11',
+        '927.080.11',
+        '914.060.11',
+        '990.505.11',
+        '10639',
+        '914.817.11',
+        'спил',
+        'угол',
       ];
 
       // Проверка на стекло и зеркало
@@ -298,17 +304,19 @@ function SelectPanelForFactori() {
           let UniqueButts = [];
           for (let i = 0; i < CountButts; i++) {
             let ButtsMaterial = Butts.Butts[i].Material.split('\r')[0];
-            if (!UniqueButts.includes(ButtsMaterial)) UniqueButts.push(ButtsMaterial);
+            if (!UniqueButts.includes(ButtsMaterial))
+              UniqueButts.push(ButtsMaterial);
             if (UniqueButts.length >= 2) flag = true;
           }
-          
+
           for (let i = 0; i < CountButts; i++) {
             let CurrentButt = Butts.Butts[i];
             let ButtsMaterial = CurrentButt.Material.split('\r')[0];
-            
+
             // Если прифуговка 0 или больше 2 мм
-            if (CurrentButt.Allowance == 0 || CurrentButt.Allowance > 2) flag = true;
-            
+            if (CurrentButt.Allowance == 0 || CurrentButt.Allowance > 2)
+              flag = true;
+
             // Проверка по именам-триггерам в кромке
             for (let name of TriggerName) {
               if (ButtsMaterial.includes(name)) flag = true;

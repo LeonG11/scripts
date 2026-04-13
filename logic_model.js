@@ -1,9 +1,3 @@
-function counteritems() {
-  createalert('скрипт выводит количество выделенных объектов');
-  alert(`Количество выделенных объектов - ${Model.SelectionCount} шт.`);
-  alert('Готово');
-  Action.Finish();
-}
 
 function HideFlow() {
   createBackup(() => {
@@ -44,21 +38,6 @@ function AreaPanel() {
       }
     }
   }
-}
-
-function DeselectFurniture() {
-  for (let i = 0; i < Model.SelectionCount; i++) {
-    let currentObject = Model.Selections[i];
-    if (
-      !(
-        currentObject instanceof TFurnPanel ||
-        currentObject instanceof TExtrusionBody
-      )
-    ) {
-      currentObject.Selected = false;
-    }
-  }
-  Action.Finish();
 }
 
 function HideNotVisible() {
@@ -261,96 +240,6 @@ function TechnicalButton() {
       alert('Ничего не выделено');
     }
   }
-}
-
-function RotationCamera() {
-  const Menu = Action.Properties;
-  ScriptForm.Form.Visible = false;
-
-  const angles = [
-    [40, 20],
-    [40, -20],
-    [40, 160],
-    [40, -160],
-    [20, 20],
-    [20, -20],
-    [20, 160],
-    [20, -160],
-    [20, 45],
-    [20, -45],
-    [20, 135],
-    [20, -135],
-  ];
-
-  const Angle = Menu.NewCombo(
-    'Угол',
-    angles.map((a) => a.join(',')).join('\n')
-  );
-  const reverse = Menu.NewBool('Смотреть снизу');
-  const isometric = Menu.NewBool('Перспектива');
-
-  Angle.OnChange = () => {
-    const [x, y] = Angle.Value.split(',');
-    Action.DS.AngleX = reverse.Value ? -x : x;
-    Action.DS.AngleY = y;
-    ViewAll();
-  };
-
-  isometric.OnChange = () => {
-    Action.DS.Camera.Perspective = isometric.Value;
-    if (!isometric.Value) Action.DS.Camera.Projection = 7;
-    ViewAll();
-  };
-
-  Menu.NewButton('Закончить').OnClick = () => Action.Finish();
-
-  Action.OnFinish = () => {
-    Action.DS.Camera.Perspective = false;
-    Action.DS.Camera.Projection = 7;
-    ViewAll();
-    ScriptForm.Form.Visible = true;
-  };
-}
-
-function CellSeparator() {
-  const Menu = Action.Properties;
-  ScriptForm.Form.Visible = false;
-
-  let wSep = Menu.NewNumber('Ширина разделителя');
-  let hSep = Menu.NewNumber('Глубина разделителя');
-  let wCell = Menu.NewNumber('Ширина ячейки');
-  let hCell = Menu.NewNumber('Глубина ячейки');
-  let wCount = Menu.NewNumber('Кол-во ячеек по ширине');
-  let hCount = Menu.NewNumber('Кол-во ячеек по глубине');
-  let thIn = Menu.NewNumber('Толщина внут. мат-ла');
-  let thOut = Menu.NewNumber('Толщина внеш. мат-ла');
-
-  Menu.NewButton('Рассчитать').OnClick = () => {
-    if (wSep.Value != 0 && wCell.Value != 0)
-      return alert('Удалите либо размер ячейки, либо разделителя');
-
-    if (wCell.Value == 0) {
-      wCell.Value =
-        (wSep.Value - 2 * thOut.Value - (wCount.Value - 1) * thIn.Value) /
-        wCount.Value;
-      hCell.Value =
-        (hSep.Value - 2 * thOut.Value - (hCount.Value - 1) * thIn.Value) /
-        hCount.Value;
-    } else {
-      wSep.Value =
-        2 * thOut.Value +
-        (wCount.Value - 1) * thIn.Value +
-        wCount.Value * wCell.Value;
-      hSep.Value =
-        2 * thOut.Value +
-        (hCount.Value - 1) * thIn.Value +
-        hCount.Value * hCell.Value;
-    }
-  };
-  Menu.NewButton('Закончить').OnClick = () => Action.Finish();
-  Action.OnFinish = () => {
-    ScriptForm.Form.Visible = true;
-  };
 }
 
 function CheckButts() {

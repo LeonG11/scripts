@@ -6,11 +6,6 @@ InitButton = [
     GroupType: 'Rename',
   },
   {
-    Name: 'SelectDatumBlock',
-    Description: 'Выделение фрагментов',
-    GroupType: 'Select',
-  },
-  {
     Name: 'DeleteEmptyFurniture',
     Description: 'Удалить пустые схемы крепежа',
     GroupType: 'Furniture',
@@ -36,39 +31,9 @@ InitButton = [
     GroupType: 'Model',
   },
   {
-    Name: 'CounterItems',
-    Description: 'Количество выделенных объектов',
-    GroupType: 'Model',
-  },
-  {
-    Name: 'AreaPanel',
-    Description: 'Внесение площади покраски',
-    GroupType: 'Model',
-  },
-  {
-    Name: 'InsertGlobalDim',
-    Description: 'Внесение габ.р-р в наз. блока',
-    GroupType: 'Select',
-  },
-  {
     Name: 'SelectFastPanels',
-    Description: 'Выделение соед.панелей',
+    Description: 'Выделение соединенных панелей',
     GroupType: 'Select',
-  },
-  {
-    Name: 'SortStructureModel',
-    Description: 'Сортировка структуры модели',
-    GroupType: 'Model',
-  },
-  {
-    Name: 'DeleteAssemblyUnit',
-    Description: 'Выделить сборочные единицы св-во',
-    GroupType: 'Model',
-  },
-  {
-    Name: 'SelectOneNumberDiffName',
-    Description: 'Проверка одна поз. разные наим.',
-    GroupType: 'Model',
   },
   {
     Name: 'DeleteElastic',
@@ -77,17 +42,12 @@ InitButton = [
   },
   {
     Name: 'SelectOff',
-    Description: 'Выделение об. с выкл. учетом',
+    Description: 'Выделение объектов с выкл. учетом',
     GroupType: 'Select',
   },
   {
     Name: 'SelectOneDesignationDiffName',
     Description: 'Выделение одно обозначение - разные имена',
-    GroupType: 'Select',
-  },
-  {
-    Name: 'SearchPosition',
-    Description: 'Выделение по позиции',
     GroupType: 'Select',
   },
   {
@@ -151,21 +111,6 @@ InitButton = [
     GroupType: 'Rename',
   },
   {
-    Name: 'CellSeparator',
-    Description: 'Расчет разделителя',
-    GroupType: 'Model',
-  },
-  {
-    Name: 'RotationCamera',
-    Description: 'Повороты камеры',
-    GroupType: 'Model',
-  },
-  {
-    Name: 'DeselectFurniture',
-    Description: 'Отменить выделение фурнитуры',
-    GroupType: 'Model',
-  },
-  {
     Name: 'WeightPanel',
     Description: 'Вес выделенных панелей по плотности',
     GroupType: 'Panel',
@@ -208,14 +153,14 @@ InitButton = [
   },
   {
     Name: 'SelectUserProperty',
-    Description: 'Выделить все объкты с польз. св-ми',
+    Description: 'Выделить объекты с пользовательскими св-ми',
     GroupType: 'Select',
   },
-  {
-    Name: 'ExportMetalSpec',
-    Description: 'Создать спецификацию металла',
-    GroupType: 'Model',
-  },
+  // {
+  //   Name: 'ExportMetalSpec',
+  //   Description: 'Создать спецификацию металла',
+  //   GroupType: 'Model',
+  // },
 ];
 TypeGroup = ['Rename', 'Furniture', 'Model', 'Select', 'Panel'];
 SignGroup = [
