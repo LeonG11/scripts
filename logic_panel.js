@@ -1,82 +1,51 @@
-function WeightPanel()  {
+function WeightPanel() {
   ScriptForm.Form.Visible = false;
-  alert(
-    'Выделение панелей идёт через структуру модели\nНе через нажатие на панели в модели'
-  );
+  
   let Menu = Action.Properties;
+  let Area = Menu.NewNumber('Общий вес, кг.', 0);
+  let Density = Menu.NewNumber('Плотность материала кг/м3', 900);
+  
   let CalcAreaButton = Menu.NewButton('Рассчитать вес');
-  let ResetArea = (Menu.NewButton('Сбросить общий вес').OnClick = () => {
-    Area.Value = 0;
-  });
-  Menu.NewButton('Отменить выделение').OnClick = () => UnSelectAll();
-  Menu.NewButton('Закончить').OnClick = () => Action.Finish();
-  let Area = Menu.NewNumber('Общий вес, кг.');
-  let Flow = Menu.NewNumber('Плотность материала кг/м3', 900);
-  class PanelWeight {
-    constructor(panel) {
-      this.panel = panel;
-    }
-    Weight() {
-      let width = this.panel.ContourWidth / 1000;
-      let height = this.panel.ContourHeight / 1000;
-      let thickness = this.panel.Thickness / 1000;
-      let CurrentFlow = Flow.Value;
-      if (CurrentFlow != 0) {
-        return width * height * thickness * CurrentFlow;
-      } else {
-        alert('Не введено значение плотности');
-        return 0;
-      }
-    }
-  }
-  CalcAreaButton.OnClick = () => {
-    let currentSelectedPanel = Model.Selections;
-    let CounterSelected = Model.SelectionCount;
-    if (CounterSelected != 0) {
-      for (let i = 0; i < CounterSelected; i++) {
-        let CurrentPanel = new PanelWeight(currentSelectedPanel[i]);
-        Area.Value += CurrentPanel.Weight();
-      }
-    }
-  };
-};
-
-function InfoAreaPanel() {
-  ScriptForm.Form.Visible = false;
-  let Menu = Action.Properties;
-  let Area = Menu.NewNumber('Площадь,м2');
-  let CalculateArea = Menu.NewButton('Рассчитать площадь');
-  Menu.NewButton('Обнулить значение').OnClick = () => {
+  
+  Menu.NewButton('Сбросить общий вес').OnClick = function() {
     Area.Value = 0;
   };
-  Menu.NewButton('Отменить выделение').OnClick = () => UnSelectAll();
-  Menu.NewButton('Закончить').OnClick = () => Action.Finish();
-  class PanelArea {
-    constructor(panel) {
-      this.panel = panel;
-    }
-    Area() {
-      let width = this.panel.ContourWidth / 1000;
-      let height = this.panel.ContourHeight / 1000;
-      let thickness = this.panel.Thickness / 1000;
-      return 2 * (width * height + width * thickness + height * thickness);
-    }
-  }
-  CalculateArea.OnClick = () => {
-    let currentSelectedPanel = Model.Selections;
-    let CounterSelected = Model.SelectionCount;
-    if (CounterSelected != 0) {
-      for (let i = 0; i < CounterSelected; i++) {
-        if (CounterSelected[i] instanceof TFurnPanel) {
-          let CurrentPanel = new PanelArea(currentSelectedPanel[i]);
-          Area.Value += CurrentPanel.Area();
-        }
+  Menu.NewButton('Закончить').OnClick = function() {
+    Action.Finish();
+  };
+
+  // Функция для глубокого поиска панелей в блоках
+  function GetWeight(obj, dens) {
+    let w = 0;
+    if (obj instanceof TFurnPanel) {
+      let panel = obj.AsPanel;
+      w = (panel.ContourWidth / 1000) * (panel.ContourHeight / 1000) * (panel.Thickness / 1000) * dens;
+    } else if (obj.Count > 0) { // Если это блок/сборка, идем внутск
+      for (let i = 0; i < obj.Count; i++) {
+        w += GetWeight(obj.Objects[i], dens);
       }
     }
-  };
-};
+    return w;
+  }
 
-function PaintPanel () {
+  CalcAreaButton.OnClick = function() {
+    if (Model.SelectionCount > 0) {
+      let tempWeight = 0;
+      for (let i = 0; i < Model.SelectionCount; i++) {
+        tempWeight += GetWeight(Model.Selections[i], Density.Value);
+      }
+      
+      let total = Area.Value + tempWeight;
+      Area.Value = Math.round(total * 100) / 100;
+    } else {
+      alert('Не выделено ни одной панели или блока');
+    }
+  };
+}
+
+
+
+function PaintPanel() {
   ScriptForm.Form.Visible = false;
   let Menu = Action.Properties;
   let Area = Menu.NewNumber('Площадь покраски, м2', 0);
@@ -140,4 +109,4 @@ function PaintPanel () {
     }
   };
   Action.Continue();
-};
+}
